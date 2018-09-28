@@ -6,8 +6,7 @@
 // Heavily modified from an example by Camilla Berglund <elmindreda@glfw.org>
 //========================================================================
 
-#include<GL/glut.h>  
-#include <glad4.5/glad.h>
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <vector>
 
@@ -19,7 +18,7 @@
 #include <cmath>
 
 #include "Camera.h"
-//#include "GeomLib.h"
+#include "GeomLib.h"
 
 using namespace std;
 
@@ -31,10 +30,9 @@ vector< vector<bool> > is_edge;
 
 int mouse_x, mouse_y;
 
-double vertex_size = 0.5;
+double vertex_size = 0.1;
 
 int active_vertex = -1;
-int m_left = 0;
 //////////////////////////////////////////////////////////////////////
 //
 // Draw the coordinate grid.
@@ -52,35 +50,34 @@ void drawCoordGrid()
     glBegin(GL_LINES);      // every two glVertex calls will draw a line segment
 
     // the minor vertical grid lines
-    for (x=0; x<=360; x+=10)
+    for (x=-3.0; x<=3.0; x+=0.1)
     {
         glVertex2d(x,-3.0);
         glVertex2d(x, 3.0);
     }
     // the minor horizontal grid lines
-    for (y=-1; y<=1; y+=0.1)
+    for (y=-3.0; y<=3.0; y+=0.1)
     {
-        glVertex2d(0,y);
-        glVertex2d( 360,y);
+        glVertex2d(-3.0,y);
+        glVertex2d( 3.0,y);
     }
 
     // the major vertical grid lines: lighter blue
-	glColor3d(0, 0, .9);
-	glLineWidth(1);
-    for (x=0; x<=360; x+=90)
+    glColor3d(.7,.7,.9);
+    for (x=-3.0; x<=3.0; x+=1)
     {
         glVertex2d(x,-3.0);
         glVertex2d(x, 3.0);
     }
 
     // the major horizontal grid lines
-    for (y=-1; y<=1; y+=0.5)
+    for (y=-3.0; y<=3.0; y+=1)
     {
-        glVertex2d(0,y);
-        glVertex2d( 360,y);
+        glVertex2d(-3.0,y);
+        glVertex2d( 3.0,y);
     }
 
-	// the coordinate axes.
+    // the coordinate axes.
     glColor3d(.9,.7,.7);
     glVertex2d(0.0,-3.0);
     glVertex2d(0.0, 3.0);
@@ -112,20 +109,33 @@ void drawCoordGrid()
 
 bool on_vertex(int x, int y, double vx, double vy)
 {
+    cout << "on_vertex (x y)=(" << x << " " << y << ")\n";
 
     double wx,wy;
     cam.mouse_to_world(x,y, wx,wy);
+
+    cout << "world coords: (x y)=(" << wx << " " << wy << ")\n";
+    cout << "vertex coords:(x y)=(" << vx << " " << vy << ")\n";
+
     double s = vertex_size;
-    return vx-s <= wx && wx <= vx+s;
+
+    return vx-s <= wx && wx <= vx+s && vy-s <= wy && wy <= vy+s;
 }
 
 int vertex_at(int x, int y) {
+    cout << "\nvertex at (" << x << " " << y << ")\n";
 
     for (int i = 0; i < vertex_x.size(); i++) {
         if (on_vertex(x, y, vertex_x[i], vertex_y[i])) {
+
+            cout << "mouse is on vertex " << i << "!\n";
+
             return i;
         }
     }
+
+    cout << "mouse isn't on any vertex\n";
+
     return -1;
 }
 
@@ -150,8 +160,42 @@ int vertex_at(int x, int y) {
 //
 //////////////////////////////////////////////////////////////////////
 
+void mouse_button_callback( GLFWwindow* window, int button,
+                            int action, int mods )
+{
+    if (button != GLFW_MOUSE_BUTTON_LEFT)
+        return;
 
-/*
+    if (action == GLFW_PRESS)
+    {
+        double wx, wy;
+        cam.mouse_to_world(mouse_x, mouse_y, wx, wy);
+        // Here, find out if mouse was pressed on some vertex,
+		// and record the fact that this happened
+		active_vertex = vertex_at(mouse_x, mouse_y);
+    }
+    else {
+        // Here, record the fact that NOTHING is being pressed
+        // on anymore.
+		active_vertex = -1;
+    }
+}
+
+void mouse_position_callback( GLFWwindow* window, double x, double y )
+{
+    // Here, if mouse is currently pressing on some vertex,
+    // change the vertex's position.
+
+    mouse_x = (int)x;
+    mouse_y = (int)y;
+    double wx, wy;
+	cam.mouse_to_world(mouse_x, mouse_y, wx, wy);
+	if (active_vertex != -1) {
+		vertex_x[active_vertex] = wx;
+		vertex_y[active_vertex] = wy;
+	}
+}
+
 Point4 cross_point(Point4 A, Point4 B, Point4 C, Point4 D) {
 	Vector4 V = D - C;    
 	Vector4 N(-V.Y(), V.X(), 0);    
@@ -172,7 +216,7 @@ Point4 cross_point(Point4 A, Point4 B, Point4 C, Point4 D) {
 	}
 	else
 		return Point4(0, 0, 0);
-}*/
+}
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -187,7 +231,6 @@ void display(void)
     //
     // Set the background colour to darkish blue-gray.
     //
-	/*相交检测
 	vector<Point4> cross_p;
 	for (int i = 0; i < is_edge.size(); ++i)
 		for (int j = 0; j < is_edge.size(); ++j) 
@@ -206,12 +249,11 @@ void display(void)
 	if (cross_p.size()) 
 		glClearColor(.4f, .4f, 0.6f, 1.f);
 	else
-		glClearColor(1, 1, 1, 1.f);*/
+		glClearColor(0, .8, 0, 1.f);
 
     //
     // OK, now clear the screen with the background colour
     //
-	glClearColor(1, 1, 1, 1.f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     cam.begin_drawing();
@@ -223,26 +265,19 @@ void display(void)
 	double s;
     // Draw little boxs ( vertexs)
 
-    s = vertex_size;
+    s = vertex_size / 2;
     glColor3d(0.0, 0.0, 1.0);
-	//画顶点
     glBegin(GL_QUADS);
 	for (int i = 0; i < vertex_x.size(); ++i) {
-		int zoom = 1;
-		if (i == active_vertex)
-			glColor3d(1.0, 0.0, 0.0);
-			glVertex2d(vertex_x[i] - s*zoom, vertex_y[i] - s * zoom/90);
-			glVertex2d(vertex_x[i] + s * zoom, vertex_y[i] - s * zoom / 90);
-			glVertex2d(vertex_x[i] + s * zoom, vertex_y[i] + s * zoom / 90);
-			glVertex2d(vertex_x[i] - s * zoom, vertex_y[i] + s * zoom / 90);
-			if (i == active_vertex)
-				glColor3d(0.0, 0.0, 1.0);
+		glVertex2d(vertex_x[i] - s, vertex_y[i] - s);
+		glVertex2d(vertex_x[i] + s, vertex_y[i] - s);
+		glVertex2d(vertex_x[i] + s, vertex_y[i] + s);
+		glVertex2d(vertex_x[i] - s, vertex_y[i] + s);
 	}
     glEnd();
 	// Draw little boxs ( cross points) 
-	/*s = vertex_size / 4;
+	s = vertex_size / 4;
 	glColor3d(1.0, 0.0, 0.0);
-	
 	glBegin(GL_QUADS);
 	for (int i = 0; i < cross_p.size(); ++i) {
 		glVertex2d(cross_p[i].X() - s, cross_p[i].Y() - s);
@@ -250,16 +285,18 @@ void display(void)
 		glVertex2d(cross_p[i].X() + s, cross_p[i].Y() + s);
 		glVertex2d(cross_p[i].X() - s, cross_p[i].Y() + s);
 	}
-	glEnd();*/
+	glEnd();
     // Draw lines segment (edges)
-    glColor3d(0.0, 0.0, 0.0);
-    glLineWidth(2);  // lines are 3 pixels wide
+    glColor3d(1.0, 1.0, 0.0);
+    glLineWidth(3);  // lines are 3 pixels wide
     glBegin(GL_LINES);
-	for (int i=0;i+1<vertex_x.size();++i)
-	{
-		glVertex2d(vertex_x[i], vertex_y[i]);
-		glVertex2d(vertex_x[i+1], vertex_y[i+1]);
-	}
+	for (int i=0;i<is_edge.size();++i)
+		for (int j = 0; j < is_edge.size(); ++j)
+			if (is_edge[i][j] == true)
+			{
+				glVertex2d(vertex_x[i], vertex_y[i]);
+				glVertex2d(vertex_x[j], vertex_y[j]);
+			}
     glEnd();
 }
 
@@ -283,18 +320,18 @@ void read_graph(char *filename)
 	if (!ifs)
 		cerr << "can't open file\n";
 	int n_vertices;
-	n_vertices = 360;
+	ifs >> n_vertices;
 	for (int i=0;i<n_vertices;++i)
 	{
-		//is_edge.push_back(vector<bool>());
-		vertex_x.push_back(0 + 360 * double(i)/n_vertices);
+		is_edge.push_back(vector<bool>());
+		vertex_x.push_back(0);
 		vertex_y.push_back(0);
-		/*for (int j=0;j<n_vertices;++j)
+		for (int j=0;j<n_vertices;++j)
 		{
 			int flag;
 			ifs >> flag;
 			is_edge[i].push_back(flag == 1);
-		}*/
+		}
 	}
 }
 
@@ -302,58 +339,7 @@ static void error_callback(int error, const char* description)
 {
     fprintf(stderr, "Error: %s\n", description);
 }
-void mouse_button_callback(GLFWwindow* window, int button,
-	int action, int mods)
-{
-	if (button != GLFW_MOUSE_BUTTON_LEFT)
-		return;
 
-	if (action == GLFW_PRESS)
-	{
-		double wx, wy;
-		cam.mouse_to_world(mouse_x, mouse_y, wx, wy);
-		// Here, find out if mouse was pressed on some vertex,
-		// and record the fact that this happened
-		active_vertex = vertex_at(mouse_x, mouse_y);
-		m_left = 1;
-	}
-	else {
-		// Here, record the fact that NOTHING is being pressed
-		// on anymore.
-		active_vertex = -1;
-		m_left = 0;
-	}
-}
-
-void mouse_position_callback(GLFWwindow* window, double x, double y)
-{
-	// Here, if mouse is currently pressing on some vertex,
-	// change the vertex's position.
-
-	mouse_x = (int)x;
-	mouse_y = (int)y;
-	double wx, wy;
-	/*if (active_vertex != -1) {
-	//vertex_x[active_vertex] = wx;
-	vertex_y[active_vertex] = wy;
-	}*/
-	if (m_left) {
-		active_vertex = vertex_at(mouse_x, mouse_y);
-		cam.mouse_to_world(mouse_x, mouse_y, wx, wy);
-		if(active_vertex !=-1)
-			vertex_y[active_vertex] = wy;
-	}
-}
-
-void scroll_callback(GLFWwindow* window, double x, double y) {
-	double wx, wy;
-	cam.mouse_to_world(mouse_x, mouse_y, wx, wy);
-	int vertex = vertex_at(mouse_x, mouse_y);
-	if (vertex != -1) {
-		//vertex_x[active_vertex] = wx;
-		vertex_y[vertex] += y/10;
-	}
-}
 static void key_callback(GLFWwindow* window, int key,
                          int scancode, int action, int mods)
 {
@@ -364,21 +350,12 @@ static void key_callback(GLFWwindow* window, int key,
     }
 }
 
-void framebuffer_size_callback(GLFWwindow* window, int w, int h)
-{
-	glViewport(0, 0, (GLsizei)w, (GLsizei)h);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	gluPerspective(60.0, (GLfloat)w / (GLfloat)h, 1.0, 2000);
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	cam = Camera(0, -1, 360, 2, w, h, window);
-}
 int main(int argc, char *argv[])
 {
     GLFWwindow* window;
-    int w = 1440;
-    int h = 900;
+    int w = 600;
+    int h = 600;
+
     if (argc != 2)
     {
         cerr << "Usage:\n";
@@ -396,38 +373,34 @@ int main(int argc, char *argv[])
     if (!glfwInit()) {
         cerr << "glfwInit failed!\n";
         cerr << "PRESS <ENTER>\n";
+        char line[100];
+        cin >> line;
         exit(EXIT_FAILURE);
     }
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 
     window = glfwCreateWindow(w, h, "Untangle a graph", NULL, NULL);
     if (!window)
     {
         cerr << "glfwCreateWindow failed!\n";
         cerr << "PRESS <ENTER>\n";
+        char line[100];
+        cin >> line;
+
         glfwTerminate();
         exit(EXIT_FAILURE);
-	}
-	glfwMakeContextCurrent(window);
-	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-	{
-		std::cout << "Failed to initialize GLAD" << std::endl;
-		return -1;
-	}
-	glViewport(0, 0, (GLsizei)w, (GLsizei)h);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	gluPerspective(60.0, (GLfloat)w / (GLfloat)h, 1.0, 2000);
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	cam = Camera(0, -1, 360, 2, w, h, window);
-	// 选择投影矩阵，并重置坐标系统
-   // cam = Camera(-1.5,-1.5, 3, 3, w, h, window);
+    }
+
+    cam = Camera(-1.5,-1.5, 3, 3, w, h, window);
+
     glfwSetKeyCallback(window, key_callback);
     glfwSetMouseButtonCallback(window, mouse_button_callback);
     glfwSetCursorPosCallback(window,   mouse_position_callback);
-	glfwSetScrollCallback(window, scroll_callback);
-	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+
     glfwMakeContextCurrent(window);
+    gladLoadGLLoader((GLADloadproc) glfwGetProcAddress);
     glfwSwapInterval(1);
 
     while (!glfwWindowShouldClose(window))

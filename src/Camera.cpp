@@ -1,6 +1,8 @@
 #include "camera.h"
 
+#include "..\\font.h"
 #include <iostream>
+#include <string>
 
 using namespace std;
 
@@ -86,53 +88,94 @@ void Camera::check_resize()
 void Camera::draw_grid(double minor_spacing, double major_spacing)
 {
     double x,y;
+    double left   = (int)(_world_BLx);
+    double right  = left + _world_W;
+    double bottom = (int)(_world_BLy);
+    double top    = bottom + _world_H;
+	double minor_spacingx = _world_W / 20;
+	double major_spacingx = _world_W / 4;
+	double minor_spacingy = _world_H / 20;
+	double major_spacingy = _world_H / 4;
 
     glDisable(GL_DEPTH_TEST);
 
-    glLineWidth(1);       // lines as thin as possible
+    glLineWidth(1.0f);       // lines as thin as possible
 
     glBegin(GL_LINES);      // every two glVertex calls will draw a line segment
 
-    double left   = (int)(_world_BLx - 1);
-    double right  = left + _world_W + 3;
-    double bottom = (int)(_world_BLy - 1);
-    double top    = bottom + _world_H + 3;
-
     // the minor vertical grid lines
     glColor3d(0.6, 0.4, 0.4);    // darkish red
-    for (x = left; x <= right; x += minor_spacing)
+    for (x = left; x <= right; x += minor_spacingx)
     {
         glVertex2d(x, bottom);
         glVertex2d(x, top);
     }
     // the minor horizontal grid lines
-    for (y = bottom; y <= top; y += minor_spacing)
+    for (y = bottom; y <= top; y += minor_spacingy)
     {
         glVertex2d(left,  y);
         glVertex2d(right, y);
     }
+	glEnd();
 
-    // the major vertical grid lines: darkish green
-    glColor3d(0.4, 0.7, 0.4);
-    for (x = left; x <= right; x += major_spacing)
+	glLineWidth(2.0f);       // lines as thin as possible
+	glBegin(GL_LINES);      // every two glVertex calls will draw a line segment
+    glColor3d(0.4, 0.7, 0.4);// 主网线颜色: darkish green
+    for (x = left; x <= right; x += major_spacingx)
     {
         glVertex2d(x, bottom);
         glVertex2d(x, top);
     }
-
-    // the major horizontal grid lines
-    for (y = bottom; y <= top; y += major_spacing)
+    for (y = bottom; y <= top; y += major_spacingy)// 水平线
     {
         glVertex2d(left,  y);
         glVertex2d(right, y);
     }
-
-    // the coordinate axes: pink
-    glColor3d(.9,.7,.7);
-    glVertex2d(0.0, left);
-    glVertex2d(0.0, right);
-    glVertex2d(bottom, 0);
-    glVertex2d(top, 0);
-
     glEnd();
+	//画x轴
+	double aix_width = 4.0;
+	glLineWidth(aix_width);
+	glBegin(GL_LINES);
+	glColor3f(0.0, 0.0, 1.0);
+	glVertex2d( left,bottom);
+	glVertex2d(right,bottom);
+	//画y轴
+	glColor3f(0.0, 0.0, 1.0);
+	glVertex2d(left, bottom);
+	glVertex2d(left,top);
+	glEnd();
+	//画x轴刻度值
+	glColor3f(0.0, 0.0, 0.0);
+	double vb = 0.02, vl=3;
+	viewport_to_world(aix_width/2, aix_width/2, vl, vb);
+	for (x = left+major_spacingx; x < right; x += major_spacingx)
+	{
+		glPushMatrix();
+		glRasterPos3f(x, bottom+vb, 0.0);
+		drawString(to_string((int)x).c_str());
+		glPopMatrix();
+	}
+	glPushMatrix();
+	glRasterPos3f(right-5, bottom+vb , 0.0);
+	drawString("X");
+	glPopMatrix();
+	
+	for (y = bottom+major_spacingy; y <= top; y += major_spacingy)
+	{
+		glPushMatrix();
+		glColor3f(0.0, 0.0, 0.0);
+		glRasterPos3f(left+vl, y, 0.0);
+		drawString(to_string(y).substr(0,4).c_str());
+		glPopMatrix();
+	}
+	glPushMatrix();
+	glRasterPos3f(left +vl, top - vb*5, 0.0);
+	drawString("Y");
+	glPopMatrix();
+	//圆心
+	glPushMatrix();
+	glRasterPos3f(left + vl, bottom +vb, 0.0);
+	drawString("O");
+	glPopMatrix();
+	
 }
