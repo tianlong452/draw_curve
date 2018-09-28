@@ -1,0 +1,9 @@
+本代码是在visual studio 2017 下编译运行的
+完成过程中只是修改了 两个文件 GeomLib.cpp 和 untangle.cpp 因此其余文件不再打包，请将两个文件替换到原始文件夹
+并未使用makefile运行（由于gl版本原因）
+拿到代码请自行编译
+编译好之后有3个运行文件
+test.cpp
+viewMatrix.cpp
+untangle.cpp    （运行需要输入邻接阵文件名 如 ./a.out simple.txt）
+运行结果已经做了截图和正确性对比，请看截图。
